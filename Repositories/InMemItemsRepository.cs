@@ -5,10 +5,11 @@ using System.Linq;
 
 namespace Catalog.Repositories
 {
-    public class InMemItemsRepository
+    public class InMemItemsRepository : IItemsRepository
     {
-        private readonly List<Models.Item> items = 
-            new() {
+        private readonly List<Models.Item> items =
+            new()
+            {
                 new Item { Id = Guid.NewGuid(), Name = "Potion", Price = 9, CreateDate = System.DateTimeOffset.UtcNow },
                 new Item { Id = Guid.NewGuid(), Name = "Iron Sword", Price = 20, CreateDate = System.DateTimeOffset.UtcNow },
                 new Item { Id = Guid.NewGuid(), Name = "Bronze Shield", Price = 18, CreateDate = System.DateTimeOffset.UtcNow }

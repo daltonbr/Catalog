@@ -12,23 +12,23 @@ namespace Catalog.Controllers
     
     public class ItemsController : ControllerBase
     {
-        private readonly InMemItemsRepository repository;
+        private readonly IItemsRepository _repository;
 
-        public ItemsController()
+        public ItemsController(IItemsRepository repository)
         {
-            repository = new InMemItemsRepository();
+            _repository = repository;
         }
 
         // GET /items
         [HttpGet]
-        public IEnumerable<Item> GetItems() => repository.GetItems();
+        public IEnumerable<Item> GetItems() => _repository.GetItems();
 
         // GET /item/{id}
         [HttpGet("{id}")]
         //public Item GetItem(Guid id) => repository.GetItem(id);
         public ActionResult<Item> GetItem(Guid id)
         {
-            var item = repository.GetItem(id);
+            var item = _repository.GetItem(id);
             if (item == null) return NotFound();
             return Ok(item);
         }
