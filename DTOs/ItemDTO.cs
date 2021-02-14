@@ -1,13 +1,8 @@
 using System;
 
-namespace Catalog.Models
-{
-    // Record types - C#9 feature
-    // - Use for immutable objects
-    // - With-expressions support
-    // - Value-based equality support
-
-    public record Item
+namespace  Catalog.DTOs
+{    
+    public record ItemDTO
     {
         public Guid Id { get; init; }
         public string Name { get; init; }
