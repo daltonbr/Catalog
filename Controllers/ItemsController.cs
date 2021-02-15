@@ -59,7 +59,7 @@ namespace Catalog.Controllers
             // with-expressions - C#9
             // creates a copy of a record type with the following differences
             Item updatedItem = existingItem with
-            {                
+            {
                 Name = itemDTO.Name,
                 Price = itemDTO.Price
             };
