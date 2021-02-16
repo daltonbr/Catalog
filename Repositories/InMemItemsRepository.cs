@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Catalog.Models;
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Catalog.Repositories
 {
@@ -15,25 +16,36 @@ namespace Catalog.Repositories
                 new Item { Id = Guid.NewGuid(), Name = "Bronze Shield", Price = 18, CreateDate = System.DateTimeOffset.UtcNow }
             };
 
-        public IEnumerable<Item> GetItems() => _items;
+        public async Task<IEnumerable<Item>> GetItemsAsync() =>
+            await Task.FromResult(_items);
 
-        public Item GetItem(Guid id) => _items.Where(item => item.Id == id).SingleOrDefault();
+        public async Task<Item> GetItemAsync(Guid id)
+        {
+            var item = _items.Where(item => item.Id == id).SingleOrDefault();
+            return await Task.FromResult(item);
+        } 
 
-        public void CreateItem(Item item) => _items.Add(item);
+        public async Task CreateItemAsync(Item item)
+        {
+            _items.Add(item);
+            await Task.CompletedTask;
+        }
 
-        public void UpdateItem(Item item)
+        public async Task UpdateItemAsync(Item item)
         {
             Guid id = item.Id;
             int index = _items.FindIndex(existingItem => existingItem.Id == item.Id);
             //if (index == -1) return;
             _items[index] = item;
+            await Task.CompletedTask;
         }
 
-        public void DeleteItem(Guid id)
+        public async Task DeleteItemAsync(Guid id)
         {
             var index = _items.FindIndex(existingItem => existingItem.Id == id);
             //if (index == -1) return;
             _items.RemoveAt(index);
+            await Task.CompletedTask;
         }
     }
 }
