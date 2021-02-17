@@ -17,7 +17,7 @@ $ docker run -d --rm --name mongo -p 27017:27017 -v mongodbdata:/data/db mongo
 ```
 
 ```sh
-$ docker run -d --rm --name mongo -p 27017:27017 -v mongodbdata:/data/db mongo -e MONGO_INITDB_ROOT_USERNAME=mongoadmin -e MONGO_INITDB_ROOT_PASSWORD=Pass#word1 mongo
+$ docker run -d --rm --name mongo -p 27017:27017 -v mongodbdata:/data/db -e MONGO_INITDB_ROOT_USERNAME=mongoadmin -e MONGO_INITDB_ROOT_PASSWORD=Pass#word1 mongo
 ```
 
 The last parameter is the image name
@@ -118,3 +118,94 @@ Is it healthy?
 
 We implement a **Health check endpoint**.
 This is not only useful for developers involved in the project but also for an `Orchestrator`.
+
+in `Startup.cs` we add
+
+```cs
+public void ConfigureServices(IServiceCollection services)
+{
+  //...
+  // add this line
+  services.AddHealthChecks();
+}
+
+// and 
+public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+{
+  ...
+    app.UseEndpoints(endpoints =>
+    {
+        endpoints.MapControllers();
+        // add this line bellow
+        endpoints.MapHealthChecks("/health");
+    });
+}
+```
+
+Now we can get query the health
+
+```sh
+{Host}:{Port}/health
+```
+
+To get more details about MongoDB health we can use a Nugget package for that
+
+This is an open-source project
+<https://www.nuget.org/packages/AspNetCore.HealthChecks.MongoDb>
+
+```sh
+$ dotnet add package AspNetCore.HealthChecks.MongoDb
+```
+
+```cs
+MongoDBSettings mongoDBSettings = 
+      Configuration.GetSection(nameof(MongoDBSettings))
+                   .Get<MongoDBSettings>();
+
+// use this extension method
+services.AddHealthChecks()
+            .AddMongoDb(mongoDBSettings.ConnectionString, name: "mongodb",
+                        failureStatus: null, tags: null, timeout: TimeSpan.FromSeconds(3));
+```
+
+### Common Health endpoints
+
+`/health/ready` Is the service ready to receive request?
+`/health/live` Is the service alive?
+
+This would be ok for now, still if you want a more detailed report back, this is how we could do it
+
+```cs
+app.UseEndpoints(endpoints =>
+    {
+        endpoints.MapControllers();
+        // checks the DB
+        endpoints.MapHealthChecks("/health/ready", new HealthCheckOptions{
+            Predicate = (check) => check.Tags.Contains("ready"),
+            ResponseWriter = async(context, report) =>
+            {
+                var result = JsonSerializer.Serialize(
+                    new {
+                        status = report.Status.ToString(),
+                        checks = report.Entries.Select(entry => new {
+                            name = entry.Key,
+                            status = entry.Value.Status.ToString(),
+                            exception = entry.Value.Exception != null ? entry.Value.Exception.Message : "none",
+                            duration = entry.Value.Duration.ToString()                                
+                        })
+                    }
+                );
+
+                context.Response.ContentType = MediaTypeNames.Application.Json;
+                await context.Response.WriteAsync(result);
+            }
+        });
+
+        // checks the REST API itself
+        endpoints.MapHealthChecks("/health/live", new HealthCheckOptions{
+            Predicate = (_) => false
+        });
+    });
+```
+
+For other HealthCheck providers check out <https://github.com/Xabaril/AspNetCore.Diagnostics.HealthChecks>
