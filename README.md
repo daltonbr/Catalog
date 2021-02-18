@@ -16,8 +16,16 @@ $ dotnet add package MongoDB.Driver
 $ docker run -d --rm --name mongo -p 27017:27017 -v mongodbdata:/data/db mongo
 ```
 
+Adding environment variables
+
 ```sh
 $ docker run -d --rm --name mongo -p 27017:27017 -v mongodbdata:/data/db -e MONGO_INITDB_ROOT_USERNAME=mongoadmin -e MONGO_INITDB_ROOT_PASSWORD=Pass#word1 mongo
+```
+
+Adding network
+
+```sh
+$ docker run -d --rm --name mongo -p 27017:27017 -v mongodbdata:/data/db -e MONGO_INITDB_ROOT_USERNAME=mongoadmin -e MONGO_INITDB_ROOT_PASSWORD=Pass#word1 --network=net5tutorial mongo
 ```
 
 The last parameter is the image name
@@ -209,3 +217,76 @@ app.UseEndpoints(endpoints =>
 ```
 
 For other HealthCheck providers check out <https://github.com/Xabaril/AspNetCore.Diagnostics.HealthChecks>
+
+## Docker
+
+Let's use our REST API with Docker.
+
+To simplify this task we are going to use only **HTTP** (and not **HTTPS**).
+To disable this automatic redirection - `"https://localhost:5001` into `http://localhost:5000"` - we just add an extra check in `Startup.cs` method `Configure`. We add the following check to `UseHttpsRedirection()`.
+
+When we run inside a Docker container the ASP environment change the environment to Production.
+
+```cs
+    if (env.IsDevelopment())
+    {
+        app.UseHttpsRedirection();
+    }
+```
+
+To facilitate the creation of Docker files, we will use the Microsoft's official Docker extension (ms-azuretools.vscode-docker).
+
+On the Visual Studio command pallete, type `Docker: Add Docker Files to Workspace` and follow the steps.
+Note that we want to use `Linux` if we were running docker on WSL. And for this project we only want port `80`.
+
+
+### Building
+
+```sh
+$ docker build -t catalog:v1 .
+```
+
+Since we also need a docker container for our MongoDB, we would need a network to join them.
+
+```sh
+$ docker network create net5tutorial
+```
+
+Running our RESP API - ASP core images run into port 80
+We also want to override some settings in the environment variables
+
+```sh
+$ docker run -it --rm -p 8080:80 -e MongoDBSettings:Host=mongo -e MongoDBSettings:Password=Pass#word1 --network=net5tutorial catalog:v1
+```
+
+### Pushing it to DockerHub
+
+To push our Docker image to DockerHub
+
+```sh
+$ docker login
+# retagging
+$ docker tag catalog:v1 daltonlima/catalog:v1
+$ docker push daltonlima/catalog:v1
+```
+
+### Pulling our image
+
+```sh
+$ docker pull daltonlima/catalog:v1
+```
+
+or just pull and run
+```sh
+$ docker run -it --rm -p 8080:80 -e MongoDBSettings:Host=mongo -e MongoDBSettings:Password=Pass#word1 --network=net5tutorial daltonlima/catalog:v1
+```
+
+## Kubernetes
+
+* Why a container orchestrator is needed
+* What is Kubernetes and which are its basic components
+* How Kubernetes enables resilient distributed systems
+* How to stand up a basic Kubernetes cluster in your box
+* How to deploy your REST API (and MongoDB) to Kubernetes
+* How to scale a Kubernetes deployment
+
